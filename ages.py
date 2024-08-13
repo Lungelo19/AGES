@@ -58,7 +58,7 @@ def validator():
             if len(completed_elective_modules) == 0:
                 print("ELECTIVE MODULES NOT COMPLITED")
             else:
-               ''' module_results = final_mark_validator()
+                module_results = final_mark_validator()
                 student_passed = True
                 failed_modules = []
                 for index, result in enumerate(module_results):
@@ -71,7 +71,7 @@ def validator():
                 else:
                     print("Student failed the following modules:")
                     for module, reason in failed_modules:
-                        print(f"Module :{module}: {reason}")'''
+                        print(f"Module :{module}: {reason}")
 
         else:
             module_results = final_mark_validator()
