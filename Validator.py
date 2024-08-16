@@ -1,6 +1,4 @@
 
-
-
 from operator import truediv
 from Data_Source import Courses
 from student_data import student
