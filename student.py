@@ -9,6 +9,8 @@ class Student:
         self.student_number = dataframe.loc[0,'Student Number']
         self.student_initials = dataframe.loc[0,'Initials & Surname']
         self.total_credits = int(dataframe.loc[0,'Total Credits'])
+        self.special_result = dataframe.loc[:,'special_results']
+        self.aggregate_exam_marks = dataframe.loc[:,'aggregate_exam_marks']
         self.completed_modules = dataframe.loc[:,'Modules'].to_list()
         self.completed_module_names = dataframe.loc[:,'Module Names'].to_list()
         self.final_marks = dataframe.loc[:,'Final mark'].to_list()
