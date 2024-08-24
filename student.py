@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 class Student:
     def __init__(self,file_name,file_path):
         dataframe  = pd.read_excel(file_name,file_path)
