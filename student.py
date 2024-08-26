@@ -2,7 +2,9 @@ import pandas as pd
 
 class Student:
     def __init__(self,file_name,file_path):
-        dataframe  = pd.read_excel(file_name,file_path)
+        self.file_name = file_name
+        self.file_path = file_path
+        dataframe  = pd.read_excel(self.file_name,sheet_name = self.file_path)
         dataframe = dataframe.fillna(0)
         self.template_course_code = str(dataframe.loc[0,'Course code'])
         self.template_course_name = dataframe.loc[0,'Course Name']

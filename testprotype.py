@@ -1,9 +1,9 @@
 from student import Student
 from Data_Source import Courses
-from chatgpt import Validator
+from valuator import Validator
 
 
-student1 = Student("student_data/applied_maths&compt.xlsx","failed_agre")
+student1 = Student("applied_maths&compt.xlsx","failed_agre")
 stu_status = Validator(student1,Courses)
 
 print("\n")
