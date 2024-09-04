@@ -1,5 +1,6 @@
 from Data_Source import Courses
 
+
 class Validator:
     def __init__(self, student,Courses):c
         self.student = student
@@ -26,22 +27,39 @@ class Validator:
                 raise ValueError(f"There is an unacceptable value in the re-exam ")
         
         results = []
-        for final_mark, re_exam_mark in zip(self.student.final_marks, self.student.re_exam_marks):
+        for final_mark, module in zip(self.student.final_marks, self.student.template_course_name):
             if final_mark >= 50:
-                results.append((True, "Passed"))
+                results.append((True, "Passed",module))
             elif 40 <= final_mark < 50:
-                if re_exam_mark == 50:
-                    results.append((True, "Re-exam passed"))
-                else:
-                    results.append((False, "Re-exam failed"))
+                results.append((False,"eligable for re-exam",module))
             elif final_mark == 0:
-                results.append((False, "absent"))
+                results.append((False, "absent",module))
             else:
-                results.append((False, "Failed"))
+                results.append((False, "Failed",module))
             
-
         return results
     
+
+    def re_exam(self):
+        main_results =  self.final_mark_validator()
+        re_exam_results = []
+
+        if len(self.student.re_exam_marks) != len(self.student.completed_modules):
+            raise ValueError("The number of re-exam marks must be equal to the number of completed modules")
+        for i in range(len(self.student.re_exam_marks)):
+            if isinstance(self.student.re_exam_marks[i], (int, float)):
+                if not 0 <= self.student.re_exam_marks[i] <= 50:
+                    raise ValueError(f"Re-exam mark at index {i} must be between 0 and 50")
+                
+        for  i,result  in enumerate(main_results):
+            if result[0] == False and result[1] == "eligable for re-exam":
+                if self.student.re_exam_marks[i] == 50:
+                    re_exam_results.append((True,'re-exam passed',result[2]))
+                else:
+                    re_exam_results.append((True,'re-exam passed',result[2]))
+        return  re_exam_results
+                    
+
   
     def aegrotat_exam_validator(self):
         if not hasattr(self.student, 'aegrotat_exam_marks'):
@@ -53,120 +71,103 @@ class Validator:
         len(self.student.aegrotat_exam_marks) != len(self.student.completed_module_names):
             raise ValueError("Data mismatch: Length of aegrotat exam marks, module codes, and module names lists must be equal.")
 
-        final_mark_results = self.final_mark_validator()
+        main_results = self.final_mark_validator()
 
-        for i, module_name in enumerate(self.student.completed_module_names):
-            if final_mark_results[i][1] == "absent" and self.student.aegrotat_exam_marks[i] != 0:
+        for i, main_result in enumerate(main_results):
+            if main_result[1] == "absent" and self.student.aegrotat_exam_marks[i] != 0:
                 aegrotat_exam_mark = self.student.aegrotat_exam_marks[i]
                 if not isinstance(aegrotat_exam_mark, (int, float)):
                     raise ValueError(f"aegrotat exam mark at index {i} must be a number.")
                 if not 0 <= aegrotat_exam_mark <= 50:
                     raise ValueError(f"aegrotat exam mark at index {i} must be between 0 and 50.")
                 
-                if aegrotat_exam_mark < 40:
-                    aegrotat_exam_results.append((False, "Failed aegrotat exam"))
-                elif 40 <= aegrotat_exam_mark < 50:
-                    aegrotat_exam_results.append((True, "Qualified for special exam"))
-                else:
+                if aegrotat_exam_mark == 50:
                     aegrotat_exam_results.append((True, "Passed aegrotat exam"))
+                else:
+                    aegrotat_exam_results.append((True, "Failed aegrotat exam"))
 
         return aegrotat_exam_results
 
     def special_exam_results(self):
-        module_results = self.final_mark_validator()
-        aegrotat_exam_results = self.aegrotat_exam_validator()
+        # Get results from various validators
+        main_exam = self.final_mark_validator()
+        re_exam = self.re_exam()
+        aegrotat_exam = self.aegrotat_exam_validator()
+
+        # Combine all results into a single list
+        combined_results = re_exam + aegrotat_exam + main_exam
 
         special_exam_results = []
 
-        # Check failed modules for the main exam
-        failed_modules = [i for i, result in enumerate(module_results) if not result[0]]
+        # Identify failed modules
+        failed_modules = [i for i, result in enumerate(combined_results) 
+                        if not result[0] and (result[1] in ["Failed", "re-exam failed", "Failed aegrotat exam"])]
 
         # Process special exam qualification
-        for i in failed_modules:
-            
-            # check if a student qualified for a  special exam based on the number of modules he/she failed
-            if len(failed_modules) <= 2 and  module_results[i][1] == "Failed":
-                if self.student.special_result[i] == 50:
-                    special_exam_results.append((True, 'Special Exam passed'))
-                elif  1 <= self.student.special_result[i] < 50:
-                    special_exam_results.append((False, 'Special Exam failed'))
+        if len(failed_modules) <= 2:
+            for i in failed_modules:
+                # Ensure index is within bounds
+                if i < len(self.student.special_result):
+                    special_exam_mark = self.student.special_result[i]
 
-
-            # Check if the student qualified for special exam based on the re-exam marks
-            if module_results[i][1] == "Re-exam failed" and 40 <= self.student.re_exam_marks[i] < 50:
-                if self.student.special_result[i] == 50:
-                    special_exam_results.append((True, 'Special Exam passed'))
-                elif  1 <= self.student.special_result[i] < 50:
-                    special_exam_results.append((False, 'Special Exam failed'))
-
-        for  x in range(len(aegrotat_exam_results)):
-            # Check if the student qualifies for a special exam based on aegrotat exam results
-            if aegrotat_exam_results[x][1] == "Qualified for special exam" and 40 <= self.student.aegrotat_exam_marks[x] < 50:
-                if self.student.special_result[x] == 50:
-                    special_exam_results.append((True, 'Special Exam passed'))
-                elif  1 <= self.student.special_result[x] < 50:
-                    special_exam_results.append((False, 'Special Exam failed'))
+                    # Validate special exam mark
+                    if not isinstance(special_exam_mark, (int, float)):
+                        raise ValueError(f"Special exam mark at index {i} must be a number.")
+                    
+                    # Determine if the student passed or failed the special exam
+                    if special_exam_mark == 50:
+                        special_exam_results.append((True, 'Special Exam passed'))
+                    elif 1 <= special_exam_mark < 50:
+                        special_exam_results.append((False, 'Special Exam failed'))
+                    else:
+                        raise ValueError(f"Special exam mark at index {i} must be between 1 and 50.")
+                else:
+                    raise IndexError(f"Index {i} is out of bounds for special exam results.")
 
         return special_exam_results
 
 
+
     def results(self):
-        # Retrieve results from validators
-        module_results = self.final_mark_validator()
+
+        """
+        Evaluates a student's results based on final marks, re-exams, aegrotat exams, and special exams.
+
+        Returns:
+            bool: True if the student passed all modules, False otherwise.
+        """
+
+        # Validate input data
+        self.final_mark_validator()
+        self.re_exam()
+        self.aegrotat_exam_validator()
+
+        # Get results from all functions
+        main_results = self.final_mark_validator()
+        re_exam_results = self.re_exam()
         aegrotat_exam_results = self.aegrotat_exam_validator()
         special_exam_results = self.special_exam_results()
+        passed = True
+        # Combine all results
+        combined_results = main_results + re_exam_results + aegrotat_exam_results + special_exam_results
 
-        student_passed = True
-        failed_modules = []
-        modules_to_check_special_exam = []
+        # Check if any result is a failure
+        for result in combined_results:
+            if not result[0] and result[1] in ["Failed", "re-exam failed", "Failed aegrotat exam", "Special Exam failed"]:
+                passed = False
 
-        # Check for modules that failed in the main exam
-        failed_modules = [i for i, result in enumerate(module_results) if not result[0]]
-        
-        # Evaluate each failed module
-        for index in range(len(failed_modules)):
-            final_mark_result = module_results[index]
-            re_exam_result = self.student.re_exam_marks[index]
-            aegrotat_result = self.student.aegrotat_exam_marks[index]
-            
-            # Check re-exam results if applicable
-            if final_mark_result[1] in ["Failed", "Re-exam failed"] and re_exam_result != 0:
-                if 40 <= re_exam_result < 50:
-                    # Student qualifies for a special exam
-                    modules_to_check_special_exam.append(index)
-                else:
-                    # Student failed the re-exam
-                    student_passed = False
-                    failed_modules.append((self.student.completed_modules[index], self.student.completed_module_names[index], "Failed re-exam"))
-            
-            # Check if student had an aegrotat exam
-            if final_mark_result[1] == "absent" and aegrotat_result != 0:
-                if 40 <= aegrotat_result < 50:
-                    # Student qualifies for a special exam
-                    modules_to_check_special_exam.append(index)
-                else:
-                    # Student failed the aegrotat exam
-                    student_passed = False
-                    failed_modules.append((self.student.completed_modules[index], self.student.completed_module_names[index], "Failed aegrotat exam"))
-
-            # Check special exam results for modules that failed the main exam
-            if index in modules_to_check_special_exam:
-                special_exam_result = special_exam_results[index]
-                if not special_exam_result[0]:
-                    student_passed = False
-                    failed_modules.append((self.student.completed_modules[index], self.student.completed_module_names[index], special_exam_result[1]))
-                else:
-                    # The student passed the special exam
-                    continue
-
-        # Final decision
-        if student_passed:
-            print("Student passed all modules!")
-            print("ELIGIBLE FOR GRADUATION!")
+        # Display overall pass/fail status
+        print(passed)
+        if passed :
+            print("The student passed all modules.")
         else:
-            print("Student failed the following modules:")
-            for code, module, reason in failed_modules:
-                print(f"{code} : {module}\n Result: {reason}")
+            print("The student failed some modules.")
+        
+
+
+
+
+
     def lists_to_sets(self):
         required_modules_set = set(self.courses[self.student.template_course_code]["Module Names"])
         completed_modules_set = set(self.student.completed_module_names)
