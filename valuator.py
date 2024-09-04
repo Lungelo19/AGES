@@ -1,7 +1,7 @@
 from Data_Source import Courses
 
 class Validator:
-    def __init__(self, student,Courses):
+    def __init__(self, student,Courses):c
         self.student = student
         self.courses = Courses
 
